@@ -1,6 +1,10 @@
 package io.pcp.parfait;
 
+import io.pcp.parfait.MonitoringViewProperties;
 import io.pcp.parfait.DynamicMonitoringView;
+
+import java.io.File;
+import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.net.ConnectException;
@@ -8,6 +12,11 @@ import java.util.Arrays;
 import org.apache.log4j.Logger;
 import org.springframework.beans.BeansException;
 import org.springframework.context.support.GenericXmlApplicationContext;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ParfaitAgent {
     private static final Logger logger = Logger.getLogger(ParfaitAgent.class);
@@ -105,6 +114,37 @@ public class ParfaitAgent {
                 propertyAndValue = propertyAndValue.substring(1);
             setupProperties(propertyAndValue, "=");
         }
+    }
+    
+    public static void parseJSON()
+    {
+    	ObjectMapper mapper = new ObjectMapper();
+
+		try {
+			JsonNode root = mapper.readTree(new File("/home/pratyush/Desktop/jvm.config"));
+			JsonNode metrics = root.path("metrics");
+			for (JsonNode node : metrics) {
+				String name = node.path("name").asText();
+				String description = node.path("description").asText();
+				String units = node.path("units").asText();
+				String mBeanName = node.path("mBeanName").asText();
+				String mBeanAttributeName = node.path("mBeanAttributeName").asText();
+				String mBeanCompositeDataItem = node.path("mBeanCompositeDataItem").asText();
+				System.out.println("Name : " + name);
+				System.out.println("Description : " + description);
+				System.out.println("Units : " + units);
+				System.out.println("mBeanName : " + mBeanName);
+				System.out.println("mBeanAttributeName : " + mBeanAttributeName);
+				System.out.println("mBeanCompositeDataItem : " + mBeanCompositeDataItem);
+				System.out.println("--------------------------------------------------");
+			}
+		} catch (JsonGenerationException e) {
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
     }
 
     public static void main(String[] arguments) {
