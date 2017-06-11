@@ -1,15 +1,17 @@
 package io.pcp.parfait;
 
 import io.pcp.parfait.MonitoringViewProperties;
+import io.pcp.parfait.jmx.MonitoredMBeanAttributeFactory;
 import io.pcp.parfait.DynamicMonitoringView;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
-import java.lang.management.ManagementFactory;
 import java.net.ConnectException;
-import java.util.Arrays;
+import java.util.Collection;
+
 import org.apache.log4j.Logger;
+import org.json.JSONObject;
 import org.springframework.beans.BeansException;
 import org.springframework.context.support.GenericXmlApplicationContext;
 
@@ -53,17 +55,11 @@ public class ParfaitAgent {
     }
 
     public static void startLocal() {
-        GenericXmlApplicationContext context = new GenericXmlApplicationContext();
-        DynamicMonitoringView view;
-
+        DynamicMonitoringView view = null;
         try {
-            loadContextProfile(context, "local");
-            view = (DynamicMonitoringView)context.getBean("monitoringView");
-            view.start();
+        	parseJSON(view);
         } catch (BeansException e) {
             logger.error("Stopping Parfait agent, cannot setup beans", e);
-        } finally {
-            context.close();
         }
     }
 
@@ -116,10 +112,12 @@ public class ParfaitAgent {
         }
     }
     
-    public static void parseJSON()
+    public static void parseJSON(DynamicMonitoringView view)
     {
     	ObjectMapper mapper = new ObjectMapper();
-
+    	String result = "";
+    	MonitorableRegistry mRegistry = new MonitorableRegistry();
+    	MonitoringView mView = null;
 		try {
 			JsonNode root = mapper.readTree(new File("/home/pratyush/Desktop/jvm.config"));
 			JsonNode metrics = root.path("metrics");
@@ -130,14 +128,19 @@ public class ParfaitAgent {
 				String mBeanName = node.path("mBeanName").asText();
 				String mBeanAttributeName = node.path("mBeanAttributeName").asText();
 				String mBeanCompositeDataItem = node.path("mBeanCompositeDataItem").asText();
-				System.out.println("Name : " + name);
+				result += name + "\n" + description + "\n" + units + "\n" + mBeanName + "\n" + mBeanAttributeName + "\n" + mBeanCompositeDataItem + "\n";
+				/*System.out.println("Name : " + name);
 				System.out.println("Description : " + description);
 				System.out.println("Units : " + units);
 				System.out.println("mBeanName : " + mBeanName);
 				System.out.println("mBeanAttributeName : " + mBeanAttributeName);
 				System.out.println("mBeanCompositeDataItem : " + mBeanCompositeDataItem);
-				System.out.println("--------------------------------------------------");
+				System.out.println("--------------------------------------------------");*/
+		        MonitoredMBeanAttributeFactory<?> mMBeanAttributeFactory = new MonitoredMBeanAttributeFactory<>(name, description, mBeanName, mBeanAttributeName, mBeanCompositeDataItem);
+		        mMBeanAttributeFactory.setMonitorableRegistry(mRegistry);
 			}
+			view = new DynamicMonitoringView(mRegistry, mView);
+			view.start();
 		} catch (JsonGenerationException e) {
 			e.printStackTrace();
 		} catch (JsonMappingException e) {
