@@ -1,5 +1,6 @@
 package io.pcp.parfait;
 
+import io.pcp.parfait.MonitorableRegistry;
 import io.pcp.parfait.MonitoringViewProperties;
 import io.pcp.parfait.dxm.PcpMmvWriter;
 import io.pcp.parfait.jmx.MonitoredMBeanAttributeFactory;
@@ -19,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ParfaitAgent {
     private static final Logger logger = Logger.getLogger(ParfaitAgent.class);
+    private static MonitorableRegistry registry = MonitorableRegistry.DEFAULT_REGISTRY;
 
     // find the root cause of an exception, for nested BeansException case
     public static Throwable getCause(Throwable e) {
@@ -43,18 +45,16 @@ public class ParfaitAgent {
     public static void startLocal() {
     	Specification spec[] = null;
         DynamicMonitoringView view;
-        PcpMmvWriter pMmvWriter;
-        MonitorableRegistry mRegistry = new MonitorableRegistry();
-        MonitoredMBeanAttributeFactory<?> mMBeanAttributeFactory = null;
+        PcpMmvWriter pcpMmvWriter;
+		MonitoredMBeanAttributeFactory<?> mMBeanAttributeFactory = null;
         try {
-        	parseJSON(spec);
-        	for (int i = 0; i < spec.length; i++)
-        	{
-        		mMBeanAttributeFactory = new MonitoredMBeanAttributeFactory<>(spec[i].getName(), spec[i].getDescription(), spec[i].getmBeanName(), spec[i].getmBeanAttributeName(), spec[i].getmBeanCompositeDataItem());
-		        mMBeanAttributeFactory.setMonitorableRegistry(mRegistry);
-        	}
-        	view = new DynamicMonitoringView((MonitoringView) mMBeanAttributeFactory);
-			view.start();
+            parseJSON(spec);
+               for (int i = 0; i < spec.length; i++) {
+               mMBeanAttributeFactory = new MonitoredMBeanAttributeFactory<>(spec[i].getName(), spec[i].getDescription(), spec[i].getmBeanName(), spec[i].getmBeanAttributeName(), spec[i].getmBeanCompositeDataItem());
+                mMBeanAttributeFactory.setMonitorableRegistry(registry);
+            }
+            view = new DynamicMonitoringView((MonitoringView) mMBeanAttributeFactory);
+            view.start();
         } catch (Exception e) {
             logger.error(e);
         }
@@ -106,34 +106,34 @@ public class ParfaitAgent {
     
 	public static void parseJSON(Specification spec[])
     {
-    	ObjectMapper mapper = new ObjectMapper();
-    	int counter = 0;
-		try {
-			JsonNode root = mapper.readTree(new File("/home/pratyush/Desktop/jvm.config"));
-			JsonNode metrics = root.path("metrics");
-			for (JsonNode node : metrics) {
-				String name = node.path("name").asText();
-				String description = node.path("description").asText();
-				String units = node.path("units").asText();
-				String mBeanName = node.path("mBeanName").asText();
-				String mBeanAttributeName = node.path("mBeanAttributeName").asText();
-				String mBeanCompositeDataItem = node.path("mBeanCompositeDataItem").asText();
-				spec[counter] = new Specification();
-				spec[counter].setName(name);
-				spec[counter].setDescription(description);
-				spec[counter].setUnits(units);
-				spec[counter].setmBeanName(mBeanName);
-				spec[counter].setmBeanAttributeName(mBeanAttributeName);
-				spec[counter].setmBeanCompositeDataItem(mBeanCompositeDataItem);
-				counter++;
-			}
-		} catch (JsonGenerationException e) {
-			e.printStackTrace();
-		} catch (JsonMappingException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+        ObjectMapper mapper = new ObjectMapper();
+        int counter = 0;
+        try {
+            JsonNode root = mapper.readTree(new File("/etc/pcp/parfait/jvm.config"));
+            JsonNode metrics = root.path("metrics");
+            for (JsonNode node : metrics) {
+                String name = node.path("name").asText();
+                String description = node.path("description").asText();
+                String units = node.path("units").asText();
+                String mBeanName = node.path("mBeanName").asText();
+                String mBeanAttributeName = node.path("mBeanAttributeName").asText();
+                String mBeanCompositeDataItem = node.path("mBeanCompositeDataItem").asText();
+                spec[counter] = new Specification();
+                spec[counter].setName(name);
+                spec[counter].setDescription(description);
+                spec[counter].setUnits(units);
+                spec[counter].setmBeanName(mBeanName);
+                spec[counter].setmBeanAttributeName(mBeanAttributeName);
+                spec[counter].setmBeanCompositeDataItem(mBeanCompositeDataItem);
+                counter++;
+            }
+        } catch (JsonGenerationException e) {
+            e.printStackTrace();
+        } catch (JsonMappingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] arguments) {
