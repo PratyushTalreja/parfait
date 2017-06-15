@@ -3,13 +3,16 @@ package io.pcp.parfait;
 import io.pcp.parfait.MonitorableRegistry;
 import io.pcp.parfait.MonitoringViewProperties;
 import io.pcp.parfait.dxm.PcpMmvWriter;
-import io.pcp.parfait.jmx.MonitoredMBeanAttributeFactory;
 import io.pcp.parfait.DynamicMonitoringView;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.net.ConnectException;
+
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import javax.measure.Unit;
 
 import org.apache.log4j.Logger;
 
@@ -46,14 +49,13 @@ public class ParfaitAgent {
     	Specification spec[] = null;
         DynamicMonitoringView view;
         PcpMmvWriter pcpMmvWriter;
-		MonitoredMBeanAttributeFactory<?> mMBeanAttributeFactory = null;
-        try {
+		try {
             parseJSON(spec);
                for (int i = 0; i < spec.length; i++) {
-               mMBeanAttributeFactory = new MonitoredMBeanAttributeFactory<>(spec[i].getName(), spec[i].getDescription(), spec[i].getmBeanName(), spec[i].getmBeanAttributeName(), spec[i].getmBeanCompositeDataItem());
-                mMBeanAttributeFactory.setMonitorableRegistry(registry);
+            	   Monitorable<?> monitorable = spec[i].createMonitorable();
+            	   registry.register(monitorable);
             }
-            view = new DynamicMonitoringView((MonitoringView) mMBeanAttributeFactory);
+            view = new DynamicMonitoringView((MonitoringView) registry);
             view.start();
         } catch (Exception e) {
             logger.error(e);
@@ -104,7 +106,7 @@ public class ParfaitAgent {
         }
     }
     
-	public static void parseJSON(Specification spec[])
+	public static void parseJSON(Specification spec[]) throws MalformedObjectNameException
     {
         ObjectMapper mapper = new ObjectMapper();
         int counter = 0;
@@ -114,14 +116,21 @@ public class ParfaitAgent {
             for (JsonNode node : metrics) {
                 String name = node.path("name").asText();
                 String description = node.path("description").asText();
-                String units = node.path("units").asText();
-                String mBeanName = node.path("mBeanName").asText();
+                String semantics = node.path("semantics").asText();
+                Unit<?> units = (Unit<?>) node.path("units");
+                ObjectName mBeanName = new ObjectName(node.path("mBeanName").asText());
                 String mBeanAttributeName = node.path("mBeanAttributeName").asText();
                 String mBeanCompositeDataItem = node.path("mBeanCompositeDataItem").asText();
                 spec[counter] = new Specification();
                 spec[counter].setName(name);
                 spec[counter].setDescription(description);
                 spec[counter].setUnits(units);
+                if (semantics.equalsIgnoreCase("constant"))
+                	spec[counter].setSemantics(ValueSemantics.CONSTANT);
+                else if (semantics.equalsIgnoreCase("counter"))
+                	spec[counter].setSemantics(ValueSemantics.FREE_RUNNING);
+                else
+                	spec[counter].setSemantics(ValueSemantics.MONOTONICALLY_INCREASING);
                 spec[counter].setmBeanName(mBeanName);
                 spec[counter].setmBeanAttributeName(mBeanAttributeName);
                 spec[counter].setmBeanCompositeDataItem(mBeanCompositeDataItem);
