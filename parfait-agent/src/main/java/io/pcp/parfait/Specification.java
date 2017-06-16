@@ -65,6 +65,28 @@ public class Specification {
 	public void setmBeanCompositeDataItem(String mBeanCompositeDataItem) {
 		this.mBeanCompositeDataItem = mBeanCompositeDataItem;
 	}
+	
+	public Specification(String name, String description, String semantics, ObjectName mBeanName, Unit<?> units, String mBeanAttributeName, String mBeanCompositeDataItem) {
+		if (!name.isEmpty())
+			setName(name);
+		if (!description.isEmpty())
+			setDescription(description);
+		if (!semantics.isEmpty()) {
+			if (semantics.equalsIgnoreCase("constant"))
+	        	setSemantics(ValueSemantics.CONSTANT);
+	        else if (semantics.equalsIgnoreCase("counter"))
+	        	setSemantics(ValueSemantics.FREE_RUNNING);
+	        else
+	        	setSemantics(ValueSemantics.MONOTONICALLY_INCREASING);
+		}
+		setmBeanName(mBeanName);
+		setUnits(units);
+		if (!mBeanAttributeName.isEmpty())
+			setmBeanAttributeName(mBeanAttributeName);
+		if (!mBeanCompositeDataItem.isEmpty())
+			setmBeanCompositeDataItem(mBeanCompositeDataItem);
+	}
+	
 	public <T> Monitorable<?> createMonitorable() {
 		Monitorable<?> monitorable = new Monitorable<T>() {
 

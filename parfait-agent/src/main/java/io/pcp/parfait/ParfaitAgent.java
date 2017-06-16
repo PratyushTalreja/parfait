@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.net.ConnectException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -46,13 +48,13 @@ public class ParfaitAgent {
     }
 
     public static void startLocal() {
-    	Specification spec[] = null;
+    	List<Specification> listOfMonitorable = new ArrayList<>();
         DynamicMonitoringView view;
         PcpMmvWriter pcpMmvWriter;
 		try {
-            parseJSON(spec);
-               for (int i = 0; i < spec.length; i++) {
-            	   Monitorable<?> monitorable = spec[i].createMonitorable();
+            parseJSON(listOfMonitorable);
+               for (Specification i: listOfMonitorable) {
+            	   Monitorable<?> monitorable = i.createMonitorable();
             	   registry.register(monitorable);
             }
             view = new DynamicMonitoringView((MonitoringView) registry);
@@ -106,12 +108,12 @@ public class ParfaitAgent {
         }
     }
     
-	public static void parseJSON(Specification spec[]) throws MalformedObjectNameException
+	public static void parseJSON(List<Specification> listOfMonitorable) throws MalformedObjectNameException
     {
         ObjectMapper mapper = new ObjectMapper();
-        int counter = 0;
+        listOfMonitorable = new ArrayList<>();
         try {
-            JsonNode root = mapper.readTree(new File("/etc/pcp/parfait/jvm.config"));
+            JsonNode root = mapper.readTree(new File("/etc/pcp/parfait/*"));
             JsonNode metrics = root.path("metrics");
             for (JsonNode node : metrics) {
                 String name = node.path("name").asText();
@@ -121,20 +123,8 @@ public class ParfaitAgent {
                 ObjectName mBeanName = new ObjectName(node.path("mBeanName").asText());
                 String mBeanAttributeName = node.path("mBeanAttributeName").asText();
                 String mBeanCompositeDataItem = node.path("mBeanCompositeDataItem").asText();
-                spec[counter] = new Specification();
-                spec[counter].setName(name);
-                spec[counter].setDescription(description);
-                spec[counter].setUnits(units);
-                if (semantics.equalsIgnoreCase("constant"))
-                	spec[counter].setSemantics(ValueSemantics.CONSTANT);
-                else if (semantics.equalsIgnoreCase("counter"))
-                	spec[counter].setSemantics(ValueSemantics.FREE_RUNNING);
-                else
-                	spec[counter].setSemantics(ValueSemantics.MONOTONICALLY_INCREASING);
-                spec[counter].setmBeanName(mBeanName);
-                spec[counter].setmBeanAttributeName(mBeanAttributeName);
-                spec[counter].setmBeanCompositeDataItem(mBeanCompositeDataItem);
-                counter++;
+                Specification spec = new Specification(name, description, semantics, mBeanName, units, mBeanAttributeName, mBeanCompositeDataItem);
+                listOfMonitorable.add(spec);
             }
         } catch (JsonGenerationException e) {
             e.printStackTrace();
