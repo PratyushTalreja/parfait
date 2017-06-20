@@ -1,15 +1,22 @@
 package io.pcp.parfait;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.net.MalformedURLException;  
 import java.util.List;
 
+import javax.management.InstanceNotFoundException;  
+import javax.management.MBeanServerConnection;  
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
 
 import org.apache.log4j.Logger;
 
 /**
- * A convenience mechanism for locating an MBeanServer.
+ * Convenience mechanisms for locating MBeanServer classes.
  */
 public abstract class JmxUtils {
 
@@ -55,5 +62,26 @@ public abstract class JmxUtils {
 
     public static MBeanServer locateMBeanServer() throws MBeanServerException {
         return locateMBeanServer(null);
+    }
+
+    /**
+     * Attempt to connect to a remote <code>MBeanServer</code>. Fails if no
+     * <code>MBeanServer</code> connection can be established.
+     */
+    public static MBeanServerConnection connectMBeanServer(String server) throws MBeanServerException {
+        String url = "service:jmx:rmi://localhost/jndi/rmi://"+server+"/jmxrmi";
+        try {
+            JMXServiceURL jmxUrl = new JMXServiceURL(url);
+            JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl);
+            return jmxConnector.getMBeanServerConnection();
+        } catch (MalformedURLException e) {
+            throw new MBeanServerException(
+                    "Problem with JMXServiceURL based on " + url +
+                            ": " + e.getMessage());
+        } catch (IOException e) {
+            throw new MBeanServerException(
+                    "Failed to connect to JMX server: " + server +
+                            ": " + e.getMessage());
+        }  
     }
 }

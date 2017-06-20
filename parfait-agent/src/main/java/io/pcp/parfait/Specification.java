@@ -1,142 +1,105 @@
 package io.pcp.parfait;
 
-import javax.management.ObjectName;
+import com.fasterxml.jackson.databind.JsonNode;
 import javax.measure.Unit;
 import static tec.uom.se.AbstractUnit.ONE;
 
 public class Specification {
-	String name, description, mBeanAttributeName, mBeanCompositeDataItem;
-	ObjectName mBeanName;
-	private Unit<?> units = ONE;
-	private ValueSemantics semantics = ValueSemantics.FREE_RUNNING;
+    private String name;
+    private String description;
+    private Unit<?> units = ONE;
+    private ValueSemantics semantics = ValueSemantics.FREE_RUNNING;
 
-	public ValueSemantics getSemantics() {
-		return semantics;
-	}
+    private String mBeanName;
+    private String mBeanAttributeName;
+    private String mBeanCompositeDataItem;
 
-	public void setSemantics(ValueSemantics semantics) {
-		this.semantics = semantics;
-	}
+    public Specification(String name, String description,
+                String semantics, Unit<?> units, String mBeanName,
+                String mBeanAttributeName, String mBeanCompositeDataItem) {
+        if (!name.isEmpty())
+            setName(name);
+        if (!description.isEmpty())
+            setDescription(description);
+        if (!semantics.isEmpty()) {
+            if (semantics.equalsIgnoreCase("constant"))
+                setSemantics(ValueSemantics.CONSTANT);
+            else if (semantics.equalsIgnoreCase("counter"))
+                setSemantics(ValueSemantics.FREE_RUNNING);
+            else
+                setSemantics(ValueSemantics.MONOTONICALLY_INCREASING);
+        }
+        setUnits(units);
+        setMBeanName(mBeanName);
+        if (!mBeanAttributeName.isEmpty())
+            setMBeanAttributeName(mBeanAttributeName);
+        if (!mBeanCompositeDataItem.isEmpty())
+            setMBeanCompositeDataItem(mBeanCompositeDataItem);
+    }
 
-	public String getName() {
-		return name;
-	}
+    public Specification(JsonNode node) {
+        this(node.path("name").asText(),
+             node.path("description").asText(),
+             node.path("semantics").asText(),
+             (Unit<?>) node.path("units"),
+             node.path("mBeanName").asText(),
+             node.path("mBeanAttributeName").asText(),
+             node.path("mBeanCompositeDataItem").asText());
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public ValueSemantics getSemantics() {
+        return semantics;
+    }
 
-	public String getDescription() {
-		return description;
-	}
+    public void setSemantics(ValueSemantics semantics) {
+        this.semantics = semantics;
+    }
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public Unit<?> getUnits() {
-		return units;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public void setUnits(Unit<?> units) {
-		this.units = units;
-	}
+    public String getDescription() {
+        return description;
+    }
 
-	public ObjectName getmBeanName() {
-		return mBeanName;
-	}
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-	public void setmBeanName(ObjectName mBeanName) {
-		this.mBeanName = mBeanName;
-	}
+    public Unit<?> getUnits() {
+        return units;
+    }
 
-	public String getmBeanAttributeName() {
-		return mBeanAttributeName;
-	}
+    public void setUnits(Unit<?> units) {
+        this.units = units;
+    }
 
-	public void setmBeanAttributeName(String mBeanAttributeName) {
-		this.mBeanAttributeName = mBeanAttributeName;
-	}
+    public String getMBeanName() {
+        return mBeanName;
+    }
 
-	public String getmBeanCompositeDataItem() {
-		return mBeanCompositeDataItem;
-	}
+    public void setMBeanName(String mBeanName) {
+        this.mBeanName = mBeanName;
+    }
 
-	public void setmBeanCompositeDataItem(String mBeanCompositeDataItem) {
-		this.mBeanCompositeDataItem = mBeanCompositeDataItem;
-	}
-	
-	public Specification(String name, String description, String semantics, ObjectName mBeanName, Unit<?> units, String mBeanAttributeName, String mBeanCompositeDataItem) {
-		if (!name.isEmpty())
-			setName(name);
-		if (!description.isEmpty())
-			setDescription(description);
-		if (!semantics.isEmpty()) {
-			if (semantics.equalsIgnoreCase("constant"))
-	        	setSemantics(ValueSemantics.CONSTANT);
-	        else if (semantics.equalsIgnoreCase("counter"))
-	        	setSemantics(ValueSemantics.FREE_RUNNING);
-	        else
-	        	setSemantics(ValueSemantics.MONOTONICALLY_INCREASING);
-		}
-		setmBeanName(mBeanName);
-		setUnits(units);
-		if (!mBeanAttributeName.isEmpty())
-			setmBeanAttributeName(mBeanAttributeName);
-		if (!mBeanCompositeDataItem.isEmpty())
-			setmBeanCompositeDataItem(mBeanCompositeDataItem);
-	}
-	
-	public <T> Monitorable<?> createMonitorable() {
-		Monitorable<?> monitorable = new Monitorable<T>() {
+    public String getMBeanAttributeName() {
+        return mBeanAttributeName;
+    }
 
-			@Override
-			public String getName() {
-				return getName();
-			}
+    public void setMBeanAttributeName(String mBeanAttributeName) {
+        this.mBeanAttributeName = mBeanAttributeName;
+    }
 
-			@Override
-			public String getDescription() {
-				// TODO Auto-generated method stub
-				return getDescription();
-			}
+    public String getMBeanCompositeDataItem() {
+        return mBeanCompositeDataItem;
+    }
 
-			@Override
-			public Unit<?> getUnit() {
-				// TODO Auto-generated method stub
-				return getUnits();
-			}
-
-			@Override
-			public ValueSemantics getSemantics() {
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public Class<T> getType() {
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public T get() {
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public void attachMonitor(Monitor m) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void removeMonitor(Monitor m) {
-				// TODO Auto-generated method stub
-				
-			}
-		};
-		return monitorable;
-	}
+    public void setMBeanCompositeDataItem(String mBeanCompositeDataItem) {
+        this.mBeanCompositeDataItem = mBeanCompositeDataItem;
+    }
 }

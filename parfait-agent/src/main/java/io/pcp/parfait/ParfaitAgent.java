@@ -1,9 +1,12 @@
 package io.pcp.parfait;
 
-import io.pcp.parfait.MonitorableRegistry;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.pcp.parfait.MonitoringViewProperties;
-import io.pcp.parfait.dxm.PcpMmvWriter;
-import io.pcp.parfait.DynamicMonitoringView;
+import io.pcp.parfait.AgentMonitoringView;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,19 +16,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import javax.measure.Unit;
+import javax.management.ReflectionException;
+import javax.management.MBeanServerConnection;
+import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
+import javax.management.IntrospectionException;
+import javax.management.MBeanException;
+import javax.management.MBeanServer;
 
 import org.apache.log4j.Logger;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class ParfaitAgent {
     private static final Logger logger = Logger.getLogger(ParfaitAgent.class);
-    private static MonitorableRegistry registry = MonitorableRegistry.DEFAULT_REGISTRY;
 
     // find the root cause of an exception, for nested BeansException case
     public static Throwable getCause(Throwable e) {
@@ -47,25 +49,68 @@ public class ParfaitAgent {
         }
     }
 
-    public static void startLocal() {
-    	List<Specification> listOfMonitorable = new ArrayList<>();
-        DynamicMonitoringView view;
-        PcpMmvWriter pcpMmvWriter;
-		try {
-            parseJSON(listOfMonitorable);
-               for (Specification i: listOfMonitorable) {
-            	   Monitorable<?> monitorable = i.createMonitorable();
-            	   registry.register(monitorable);
+    // parse all configuration files from the parfait directory
+    public static List<Specification> parseAllSpecifications() {
+        List<Specification> allMonitorables = new ArrayList<>();
+        File[] files;
+        try {
+            files = new File("/etc/pcp/parfait").listFiles();
+            for (File file : files) {
+                allMonitorables.addAll(parseSpecification(file));
             }
-            view = new DynamicMonitoringView((MonitoringView) registry);
-            view.start();
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return allMonitorables;
+    }
+
+    // parse a single configuration file from the parfait directory
+    public static List<Specification> parseSpecification(File file) throws MalformedObjectNameException {
+        ObjectMapper mapper = new ObjectMapper();
+        List<Specification> monitorables = new ArrayList<>();
+        try {
+            JsonNode metrics = mapper.readTree(file).path("metrics");
+            for (JsonNode node : metrics) {
+                monitorables.add(new Specification(node));
+            }
+            return monitorables;
+
+	// TODO: improve error handling here ...
+        } catch (JsonGenerationException e) {
+            e.printStackTrace();
+        } catch (JsonMappingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         } catch (Exception e) {
-            logger.error(e);
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static void startView(AgentMonitoringView view) throws InstanceNotFoundException, IntrospectionException, AttributeNotFoundException, UnsupportedOperationException, ReflectionException, MBeanException, IOException {
+        List<Specification> allSpecifications;
+
+        allSpecifications = parseAllSpecifications();
+        for (Specification specification : allSpecifications) {
+            view.register(specification);
+        }
+        view.start();
+    }
+
+    public static void startLocal() {
+        try {
+            MBeanServer server = JmxUtils.locateMBeanServer();
+            AgentMonitoringView view = new AgentMonitoringView(server);
+            startView(view);
+        } catch (Exception e) {
+            String name = MonitoringViewProperties.getName();
+            logger.error(String.format("Stopping Parfait agent [%s]", name), e);
         }
     }
 
     public static void setupPreMainArguments(String arguments) {
-        for (String propertyAndValue: arguments.split(",")) {
+        for (String propertyAndValue : arguments.split(",")) {
             setupProperties(propertyAndValue, ":");
         }
     }
@@ -75,27 +120,26 @@ public class ParfaitAgent {
         if (arguments != null) {
             setupPreMainArguments(arguments);
         }
-        String name = System.getProperty(MonitoringViewProperties.PARFAIT_NAME);
-        logger.info(String.format("Starting Parfait agent [%s]", name));
+        logger.info(String.format("Starting Parfait agent [%s]",
+                    MonitoringViewProperties.getName()));
         startLocal();
     }
 
-    public static void startProxy(String jmx) {
-        DynamicMonitoringView view = null;
-        
+    public static void startProxy() {
+        String jmx = MonitoringViewProperties.getConnection();
         try {
-            view.start();
+            MBeanServerConnection server = JmxUtils.connectMBeanServer(jmx);
+            AgentMonitoringView view = new AgentMonitoringView(server);
+            startView(view);
             Thread.currentThread().join();    // pause the main proxy thread
         } catch (Exception e) {
             String m = "Stopping Parfait proxy";  // pretty-print some errors
             if (getCause(e) instanceof ConnectException) {
                 logger.error(String.format("%s, cannot connect to %s", m, jmx));
-            } else if (e instanceof /*BeansException*/ Exception) {
-                logger.error(String.format("%s, cannot setup beans", m), e);
             } else if (e instanceof InterruptedException) {
                 logger.error(String.format("%s, interrupted", m));
             } else {
-                logger.error(m, e);
+                logger.error(String.format("%s, cannot setup beans", m), e);
             }
         }
     }
@@ -107,40 +151,13 @@ public class ParfaitAgent {
             setupProperties(propertyAndValue, "=");
         }
     }
-    
-	public static void parseJSON(List<Specification> listOfMonitorable) throws MalformedObjectNameException
-    {
-        ObjectMapper mapper = new ObjectMapper();
-        listOfMonitorable = new ArrayList<>();
-        try {
-            JsonNode root = mapper.readTree(new File("/etc/pcp/parfait/*"));
-            JsonNode metrics = root.path("metrics");
-            for (JsonNode node : metrics) {
-                String name = node.path("name").asText();
-                String description = node.path("description").asText();
-                String semantics = node.path("semantics").asText();
-                Unit<?> units = (Unit<?>) node.path("units");
-                ObjectName mBeanName = new ObjectName(node.path("mBeanName").asText());
-                String mBeanAttributeName = node.path("mBeanAttributeName").asText();
-                String mBeanCompositeDataItem = node.path("mBeanCompositeDataItem").asText();
-                Specification spec = new Specification(name, description, semantics, mBeanName, units, mBeanAttributeName, mBeanCompositeDataItem);
-                listOfMonitorable.add(spec);
-            }
-        } catch (JsonGenerationException e) {
-            e.printStackTrace();
-        } catch (JsonMappingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public static void main(String[] arguments) {
         MonitoringViewProperties.setupProperties();
         setupMainArguments(arguments);
-        String name = System.getProperty(MonitoringViewProperties.PARFAIT_NAME);
-        String c = System.getProperty(MonitoringViewProperties.PARFAIT_CONNECT);
-        logger.info(String.format("Starting Parfait proxy [%s %s]", name, c));
-        startProxy(c);
+        logger.info(String.format("Starting Parfait proxy [%s %s]",
+                    MonitoringViewProperties.getName(),
+                    MonitoringViewProperties.getConnection()));
+        startProxy();
     }
 }
