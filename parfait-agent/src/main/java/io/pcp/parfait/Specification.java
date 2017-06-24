@@ -19,6 +19,10 @@ public class Specification {
     private String mBeanName;
     private String mBeanAttributeName;
     private String mBeanCompositeDataItem;
+    
+    public Specification() {
+    	
+    }
 
     @SuppressWarnings("unchecked")
 	public Specification(String name, String description,
