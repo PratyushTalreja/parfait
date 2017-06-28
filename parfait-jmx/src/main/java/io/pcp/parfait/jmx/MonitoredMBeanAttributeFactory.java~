@@ -20,7 +20,6 @@ import javax.measure.Unit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.jmx.support.JmxUtils;
 
 import io.pcp.parfait.Monitorable;
 import io.pcp.parfait.MonitorableRegistry;
