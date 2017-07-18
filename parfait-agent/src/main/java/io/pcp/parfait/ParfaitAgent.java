@@ -54,7 +54,7 @@ public class ParfaitAgent {
         List<Specification> allMonitorables = new ArrayList<>();
         File[] files;
         try {
-            files = new File("/etc/pcp/parfait").listFiles();
+            files = new File("/src/main/resources").listFiles();
             for (File file : files) {
                 allMonitorables.addAll(parseSpecification(file));
             }
