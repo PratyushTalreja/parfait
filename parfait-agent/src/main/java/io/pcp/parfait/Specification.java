@@ -2,6 +2,9 @@ package io.pcp.parfait;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import systems.uom.quantity.Information;
+import tec.uom.se.unit.MetricPrefix;
+import tec.uom.se.unit.Units;
 
 import javax.measure.Unit;
 import javax.measure.quantity.Time;
@@ -42,12 +45,14 @@ public class Specification {
         }
         if (unitName.equalsIgnoreCase("milliseconds"))
         {
-			Unit<Time> MILLISECONDS = (Unit<Time>) TimeUnit.MILLISECONDS;
+        	Unit<Time> MILLISECONDS = MetricPrefix.MILLI(Units.SECOND);
+			//Unit<Time> MILLISECONDS = (Unit<Time>) TimeUnit.MILLISECONDS;
             setUnits(MILLISECONDS);
         }
         else if(unitName.equalsIgnoreCase("bytes"))
         {
-        	Unit<?> BYTE = (Unit<?>) NonSI.BYTE;
+        	Unit<Information> BYTE = systems.uom.unicode.CLDR.BYTE;
+        	//Unit<?> BYTE = (Unit<?>) NonSI.BYTE;
         	setUnits(BYTE);
         }
         else
