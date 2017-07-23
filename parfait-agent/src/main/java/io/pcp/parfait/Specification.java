@@ -20,42 +20,46 @@ public class Specification {
     private String mBeanCompositeDataItem;
     
     public Specification() {
-    	
     }
 
-    @SuppressWarnings("unchecked")
-	public Specification(String name, String description,
+	private Specification(String name, String description,
                 String semantics, String unitName, String mBeanName,
                 String mBeanAttributeName, String mBeanCompositeDataItem) {
-        if (!name.isEmpty())
+        if (!name.isEmpty()) {
             setName(name);
-        if (!description.isEmpty())
-            setDescription(description);
-        if (!semantics.isEmpty()) {
-            if (semantics.equalsIgnoreCase("constant"))
-                setSemantics(ValueSemantics.CONSTANT);
-            else if (semantics.equalsIgnoreCase("counter"))
-                setSemantics(ValueSemantics.FREE_RUNNING);
-            else
-                setSemantics(ValueSemantics.MONOTONICALLY_INCREASING);
         }
-        if (unitName.equalsIgnoreCase("milliseconds"))
-        {
+        if (!description.isEmpty()) {
+            setDescription(description);
+        }
+        if (!semantics.isEmpty()) {
+            if (semantics.equalsIgnoreCase("constant")) {
+                setSemantics(ValueSemantics.CONSTANT);
+            }
+            else if (semantics.equalsIgnoreCase("counter")) {
+                setSemantics(ValueSemantics.FREE_RUNNING);
+            }
+            else {
+                setSemantics(ValueSemantics.MONOTONICALLY_INCREASING);
+            }
+        }
+        if (unitName.equalsIgnoreCase("milliseconds")) {
         	Unit<Time> MILLISECONDS = MetricPrefix.MILLI(Units.SECOND);
 			setUnits(MILLISECONDS);
         }
-        else if(unitName.equalsIgnoreCase("bytes"))
-        {
+        else if(unitName.equalsIgnoreCase("bytes")) {
         	Unit<Information> BYTE = systems.uom.unicode.CLDR.BYTE;
         	setUnits(BYTE);
         }
-        else
+        else {
         	setUnits(unit);
+        }
         setMBeanName(mBeanName);
-        if (!mBeanAttributeName.isEmpty())
+        if (!mBeanAttributeName.isEmpty()) {
             setMBeanAttributeName(mBeanAttributeName);
-        if (!mBeanCompositeDataItem.isEmpty())
+        }
+        if (!mBeanCompositeDataItem.isEmpty()) {
             setMBeanCompositeDataItem(mBeanCompositeDataItem);
+        }
     }
 
     public Specification(JsonNode node) {
