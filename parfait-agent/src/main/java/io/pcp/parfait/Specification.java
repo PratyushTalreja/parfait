@@ -5,14 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import systems.uom.quantity.Information;
 import tec.uom.se.unit.MetricPrefix;
 import tec.uom.se.unit.Units;
+import static tec.uom.se.AbstractUnit.ONE;
 
 import javax.measure.Unit;
 import javax.measure.quantity.Time;
-import javax.measure.unit.NonSI;
-
-import static tec.uom.se.AbstractUnit.ONE;
-
-import java.util.concurrent.TimeUnit;
 
 public class Specification {
     private String name;
@@ -46,13 +42,11 @@ public class Specification {
         if (unitName.equalsIgnoreCase("milliseconds"))
         {
         	Unit<Time> MILLISECONDS = MetricPrefix.MILLI(Units.SECOND);
-			//Unit<Time> MILLISECONDS = (Unit<Time>) TimeUnit.MILLISECONDS;
-            setUnits(MILLISECONDS);
+			setUnits(MILLISECONDS);
         }
         else if(unitName.equalsIgnoreCase("bytes"))
         {
         	Unit<Information> BYTE = systems.uom.unicode.CLDR.BYTE;
-        	//Unit<?> BYTE = (Unit<?>) NonSI.BYTE;
         	setUnits(BYTE);
         }
         else
