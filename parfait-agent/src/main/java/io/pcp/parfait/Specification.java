@@ -11,13 +11,13 @@ import javax.measure.Unit;
 import javax.measure.quantity.Time;
 
 public class Specification {
-    private String name;
-    private String description;
-    private Unit<?> unit = ONE;
-    private ValueSemantics semantics = ValueSemantics.FREE_RUNNING;
-    private String mBeanName;
-    private String mBeanAttributeName;
-    private String mBeanCompositeDataItem;
+    public String name;
+    public String description;
+    public Unit<?> unit = ONE;
+    public ValueSemantics semantics = ValueSemantics.FREE_RUNNING;
+    public String mBeanName;
+    public String mBeanAttributeName;
+    public String mBeanCompositeDataItem;
     
     public Specification() {
     }
@@ -26,39 +26,36 @@ public class Specification {
                 String semantics, String unitName, String mBeanName,
                 String mBeanAttributeName, String mBeanCompositeDataItem) {
         if (!name.isEmpty()) {
-            setName(name);
+            this.name = name;
         }
         if (!description.isEmpty()) {
-            setDescription(description);
+            this.description = description;
         }
         if (!semantics.isEmpty()) {
             if (semantics.equalsIgnoreCase("constant")) {
-                setSemantics(ValueSemantics.CONSTANT);
+                this.semantics = ValueSemantics.CONSTANT;
             }
             else if (semantics.equalsIgnoreCase("counter")) {
-                setSemantics(ValueSemantics.FREE_RUNNING);
+                this.semantics = ValueSemantics.FREE_RUNNING;
             }
             else {
-                setSemantics(ValueSemantics.MONOTONICALLY_INCREASING);
+                this.semantics = ValueSemantics.MONOTONICALLY_INCREASING;
             }
         }
         if (unitName.equalsIgnoreCase("milliseconds")) {
         	Unit<Time> MILLISECONDS = MetricPrefix.MILLI(Units.SECOND);
-			setUnits(MILLISECONDS);
+			this.unit = MILLISECONDS;
         }
-        else if(unitName.equalsIgnoreCase("bytes")) {
+        if(unitName.equalsIgnoreCase("bytes")) {
         	Unit<Information> BYTE = systems.uom.unicode.CLDR.BYTE;
-        	setUnits(BYTE);
+        	this.unit = BYTE;
         }
-        else {
-        	setUnits(unit);
-        }
-        setMBeanName(mBeanName);
+        this.mBeanName = mBeanName;
         if (!mBeanAttributeName.isEmpty()) {
-            setMBeanAttributeName(mBeanAttributeName);
+            this.mBeanAttributeName = mBeanAttributeName;
         }
         if (!mBeanCompositeDataItem.isEmpty()) {
-            setMBeanCompositeDataItem(mBeanCompositeDataItem);
+            this.mBeanCompositeDataItem = mBeanCompositeDataItem;
         }
     }
 
@@ -76,55 +73,27 @@ public class Specification {
         return semantics;
     }
 
-    public void setSemantics(ValueSemantics semantics) {
-        this.semantics = semantics;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
     public Unit<?> getUnits() {
         return unit;
-    }
-
-    public void setUnits(Unit<?> units) {
-        this.unit = units;
     }
 
     public String getMBeanName() {
         return mBeanName;
     }
 
-    public void setMBeanName(String mBeanName) {
-        this.mBeanName = mBeanName;
-    }
-
     public String getMBeanAttributeName() {
         return mBeanAttributeName;
     }
 
-    public void setMBeanAttributeName(String mBeanAttributeName) {
-        this.mBeanAttributeName = mBeanAttributeName;
-    }
-
     public String getMBeanCompositeDataItem() {
         return mBeanCompositeDataItem;
-    }
-
-    public void setMBeanCompositeDataItem(String mBeanCompositeDataItem) {
-        this.mBeanCompositeDataItem = mBeanCompositeDataItem;
     }
 }

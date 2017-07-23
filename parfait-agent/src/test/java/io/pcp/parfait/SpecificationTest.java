@@ -11,11 +11,11 @@ public class SpecificationTest {
     @Test
     public void testSetter_setsProperly() throws NoSuchFieldException, IllegalAccessException {
         final Specification pojo = new Specification();
-        pojo.setName("foo");
-        pojo.setDescription("foo");
-        pojo.setMBeanName("foo");
-        pojo.setMBeanAttributeName("foo");
-        pojo.setMBeanCompositeDataItem("foo");
+        pojo.name = "foo";
+        pojo.description = "foo";
+        pojo.mBeanName = "foo";
+        pojo.mBeanAttributeName = "foo";
+        pojo.mBeanCompositeDataItem = "foo";
         final Field field = pojo.getClass().getDeclaredField("value");
         field.setAccessible(true);
         assertEquals("Fields didn't match", field.get(pojo), "foo");
